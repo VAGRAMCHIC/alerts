@@ -5,19 +5,16 @@ import time
 
 from datetime import datetime
 from httplib2 import Http
-import psycopg2
 import requests
 
 from init_env import *
+from db_requests import write_to_database
 
-from psycopg2 import Date
 
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-
-# If modifying these scopes, delete the file token.json.
 
 
 class OrdersInfo(NamedTuple):
@@ -27,19 +24,6 @@ class OrdersInfo(NamedTuple):
     price_rub: int
     delivery_date: tuple
 
-def connect_to_db()-> psycopg2.connect:
-    session = psycopg2.connect(**DATABASE)
-    return session
-
-def write_to_database(session: psycopg2.connect, data: list):
-    cursor = session.cursor()
-    cursor.execute(f'DELETE FROM {DB_TABLE} *')
-    session.commit()
-    for order in data:
-        cursor.execute(f'INSERT INTO {DB_TABLE} (id, id_order, price_usd, price_rub, delivery_date) \
-                        values ({order.id}, {order.order_id}, {order.price_usd}, {order.price_rub}, {Date(order.delivery_date[0],order.delivery_date[1], order.delivery_date[2])})')
-    session.commit()
-    session.close()
 
 def get_usd_currency()-> int:
     resp = requests.get(f'{CURRCONV_API}{CURRCONV_API_KEY}').json()
@@ -73,8 +57,8 @@ def get_spreadsheets()-> list:
 
 def run():
     while True:
-        conn = connect_to_db()
-        write_to_database(conn, get_spreadsheets())
+        #conn = connect_to_db()
+        write_to_database(DB_TABLE, get_spreadsheets())
         time.sleep(TIMESTAMP)
 
 
