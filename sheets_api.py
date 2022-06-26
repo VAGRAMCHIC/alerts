@@ -1,7 +1,8 @@
 from __future__ import print_function
 from operator import attrgetter
-from typing import NamedTuple
+from xml.etree import ElementTree
 import time
+
 
 from datetime import datetime
 from httplib2 import Http
@@ -16,51 +17,41 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 
+# Курс доллара по ЦБ РФ
+def get_cbrf_currency():
+    resp = ElementTree.fromstring(requests.get('http://www.cbr.ru/scripts/XML_daily.asp').content)
+    for valute in resp.findall('Valute'):
+        if valute.find('CharCode').text == 'USD':
+            return valute[4].text
 
-class OrdersInfo(NamedTuple):
-    id: int
-    order_id: int
-    price_usd: int
-    price_rub: int
-    delivery_date: tuple
-
-
-def get_usd_currency()-> int:
-    resp = requests.get(f'{CURRCONV_API}{CURRCONV_API_KEY}').json()
-    return int(resp['USD_RUB'])
 
 
 def get_service_account():
     creds_json = "speedy-aurora_test-account-3.json"
-
     creds_service = ServiceAccountCredentials.from_json_keyfile_name(creds_json, SCOPES).authorize(Http())
     return build('sheets', 'v4', http=creds_service)
 
 
+# Загрузка таблицы, если на момент загрузки таблица редактируется запись элемента пропускается
 def get_spreadsheets()-> list:
-    resp = get_service_account().spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME).execute()
-    usd_rub = get_usd_currency()
+    resp = get_service_account().spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range='Лист1!A:D').execute()
+    usd_rub = get_cbrf_currency()
     order_list = []
     for order in resp['values'][1:]:
         try:
-            data = OrdersInfo(id=order[0],
-                            order_id=order[1], 
-                            price_usd=order[2], 
-                            price_rub=str(int(order[2])*usd_rub), 
-                            delivery_date=attrgetter(*('year', 'month', 'day'))((datetime.strptime(order[3], '%d.%m.%Y').date())))
-        
+            data = (order[0], order[1], order[2], str(int(order[2])*usd_rub), 
+                    attrgetter(*('year', 'month', 'day'))((datetime.strptime(order[3], '%d.%m.%Y').date())))        
             order_list.append(data)
         except:
             pass
     return order_list
-
-
-def run():
-    while True:
-        #conn = connect_to_db()
-        write_to_database(DB_TABLE, get_spreadsheets())
-        time.sleep(TIMESTAMP)
-
+    
 
 if __name__ == '__main__':
-    run()
+    while True:
+        try:
+            write_to_database(get_spreadsheets())
+            time.sleep(TIMESTAMP)
+
+        except HttpError as e:
+            time.sleep(1)
