@@ -17,6 +17,7 @@ def write_to_database(data):
     order_ids = []
     try:
         for order in data:
+            print(order)
             order_ids.append(order[0])
             cursor.execute(f'INSERT INTO {DB_TABLE} (id, id_order, price_usd, price_rub, delivery_date, is_notified) \
                             values ({order[0]}, {order[1]}, {order[2]}, {order[3]}, {Date(order[4][0],order[4][1], order[4][2])}, {False}) \

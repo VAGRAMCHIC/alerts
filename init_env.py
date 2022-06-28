@@ -20,10 +20,6 @@ def get_env_variable(env_var_name: str):
     if os.getenv(env_var_name):
         return os.getenv(env_var_name)
 
-# Currconv api для получения курса доллара по данным ЦБ
-CURRCONV_API = 'https://free.currconv.com/api/v7/convert?q=USD_RUB&compact=ultra&apiKey='
-CURRCONV_API_KEY = get_env_variable('CURRCONV_API_KEY')
-
 
 # Googlesheets api
 SPREADSHEET_ID = get_env_variable('SPREADSHEET_ID')
@@ -35,6 +31,7 @@ CREDITS_JSON_FILE=get_env_variable('CREDITS_JSON_FILE')
 DB_BOT_TABLE=get_env_variable('DB_BOT_TABLE')
 TG_API_TOKEN=get_env_variable('TG_API_TOKEN')
 TG_BROADCAST_DELAY=int(get_env_variable('TG_BROADCAST_DELAY'))
+
 
 # Задержка между запросами к googlesheets
 TIMESTAMP=int(get_env_variable('TIMESTAMP'))
